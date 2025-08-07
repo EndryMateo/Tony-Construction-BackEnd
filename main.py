@@ -14,7 +14,7 @@ import shutil
 from datetime import datetime, timedelta
 from jose import jwt
 
-print("\ud83d\udd01 Cambio de prueba para confirmar push")
+print("Cambio de prueba para confirmar push")
 
 app = FastAPI()
 
