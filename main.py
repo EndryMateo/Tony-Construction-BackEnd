@@ -11,7 +11,12 @@ import os
 import shutil
 from datetime import datetime
 
+print("🔁 Cambio de prueba para confirmar push")
+
+
 app = FastAPI()
+
+print("🚀 Iniciando FastAPI...")
 
 # Habilitar CORS
 origins = [
@@ -36,6 +41,18 @@ templates = Jinja2Templates(directory="templates")
 # Nueva carpeta exclusiva para imágenes de proyectos
 PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
 os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
+
+# ✅ Probar conexión a la base de datos al iniciar
+@app.on_event("startup")
+def test_db_connection():
+    try:
+        print("🔄 Intentando conectar a la base de datos...")
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        print("✅ Conexión a la base de datos exitosa.")
+        db.close()
+    except Exception as e:
+        print("❌ Error al conectar a la base de datos:", e)
 
 # Crear un proyecto nuevo
 @app.post("/admin/create-project")
@@ -86,10 +103,9 @@ def delete_project(project_id: int):
     db: Session = SessionLocal()
     project = db.query(Project).filter(Project.id == project_id).first()
     if project:
-        # Borrar imágenes físicas de la carpeta correspondiente
         for img in project.image_paths.split(","):
             try:
-                filepath = os.path.join(os.getcwd(), img.lstrip("/"))  # Eliminar barra inicial
+                filepath = os.path.join(os.getcwd(), img.lstrip("/"))
                 os.remove(filepath)
             except Exception as e:
                 print(f"Error al eliminar {filepath}: {e}")

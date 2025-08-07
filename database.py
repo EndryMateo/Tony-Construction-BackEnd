@@ -3,7 +3,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # ⚠️ Reemplaza con tus datos reales de Postgres
-POSTGRES_URL = "postgresql://postgres:admin007@localhost:5432/tonydb"
+import os
+
+POSTGRES_URL = os.getenv("DATABASE_URL")
+if not POSTGRES_URL:
+    raise RuntimeError("DATABASE_URL no está configurado")
 
 engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(bind=engine)
