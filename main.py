@@ -6,25 +6,31 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from typing import Optional
+
+from database import get_db
 from models import Project
-from auth import authenticate_user, create_access_token, send_recovery_email, verify_code_and_generate_token, update_password
+from auth import (
+    authenticate_user,
+    create_access_token,
+    send_recovery_email,
+    verify_code_and_generate_token,
+    update_password
+)
+
+from database import create_project, delete_project_by_id, get_all_projects
 
 import secrets
 
 app = FastAPI()
 
-# Mount static files and templates
+# Static and template setup
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-
-# Secret key for sessions
-SECRET_KEY = secrets.token_hex(32)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-# Redirect to login if not authenticated
 def require_login(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
@@ -41,8 +47,14 @@ def login_page(request: Request):
 
 
 @app.post("/admin/login", response_class=HTMLResponse)
-def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if authenticate_user(username, password):
+def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db=Depends(get_db)
+):
+    user = authenticate_user(db, username, password)
+    if user:
         request.session["user"] = username
         return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
@@ -56,27 +68,34 @@ def admin_dashboard(request: Request):
 
 
 @app.get("/admin/projects", response_class=HTMLResponse)
-def admin_projects(request: Request):
+def admin_projects(request: Request, db=Depends(get_db)):
     redirect = require_login(request)
     if redirect: return redirect
-    projects = get_all_projects()
+    projects = get_all_projects(db)
     return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
 
 
 @app.post("/admin/create", response_class=HTMLResponse)
-def create(request: Request, title: str = Form(...), description: str = Form(...), images: str = Form(...), video_link: Optional[str] = Form(None)):
+def create_project_route(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(...),
+    images: str = Form(...),
+    video_link: Optional[str] = Form(None),
+    db=Depends(get_db)
+):
     redirect = require_login(request)
     if redirect: return redirect
     new_project = Project(title=title, description=description, images=images, video_link=video_link)
-    create_project(new_project)
+    create_project(db, new_project)
     return RedirectResponse(url="/admin/projects", status_code=status.HTTP_302_FOUND)
 
 
 @app.post("/admin/delete/{project_id}", response_class=HTMLResponse)
-def delete_project(request: Request, project_id: int):
+def delete_project(request: Request, project_id: int, db=Depends(get_db)):
     redirect = require_login(request)
     if redirect: return redirect
-    delete_project_by_id(project_id)
+    delete_project_by_id(db, project_id)
     return RedirectResponse(url="/admin/projects", status_code=status.HTTP_302_FOUND)
 
 
@@ -86,10 +105,22 @@ def recover_password_page(request: Request):
 
 
 @app.post("/admin/request-password", response_class=HTMLResponse)
-def request_password(request: Request, email: str = Form(...)):
-    success = send_recovery_email(email)
+def request_password(request: Request, email: str = Form(...), db=Depends(get_db)):
+    import random
+    code = str(random.randint(100000, 999999))
+
+    from models import PasswordResetCode
+    from datetime import datetime, timedelta
+
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    db_code = PasswordResetCode(email=email, code=code, expires_at=expires_at)
+    db.add(db_code)
+    db.commit()
+
+    success = send_recovery_email(email, code)
     if not success:
-        return templates.TemplateResponse("recover_password_form.html", {"request": request, "error": "Email not found"})
+        return templates.TemplateResponse("recover_password_form.html", {"request": request, "error": "Email not found or failed to send email"})
+
     request.session["recovery_email"] = email
     return RedirectResponse(url="/admin/verify-code", status_code=status.HTTP_302_FOUND)
 
@@ -100,11 +131,11 @@ def verify_code_page(request: Request):
 
 
 @app.post("/admin/verify-code", response_class=HTMLResponse)
-def verify_code(request: Request, code: str = Form(...)):
-    email = request.session.get("recovery_email")
-    if not email or not verify_code_and_generate_token(email, code):
+def verify_code(request: Request, code: str = Form(...), db=Depends(get_db)):
+    token = verify_code_and_generate_token(db, code)
+    if not token:
         return templates.TemplateResponse("verify_code.html", {"request": request, "error": "Invalid or expired code"})
-    request.session["reset_token"] = code  # token temporal para cambiar contraseña
+    request.session["reset_token"] = token
     return RedirectResponse(url="/admin/reset-password", status_code=status.HTTP_302_FOUND)
 
 
@@ -114,17 +145,20 @@ def reset_password_page(request: Request):
 
 
 @app.post("/admin/reset-password", response_class=HTMLResponse)
-def reset_password(request: Request, new_password: str = Form(...), confirm_password: str = Form(...)):
+def reset_password(
+    request: Request,
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db=Depends(get_db)
+):
     if new_password != confirm_password:
         return templates.TemplateResponse("change_password.html", {"request": request, "error": "Passwords do not match"})
 
-    email = request.session.get("recovery_email")
     token = request.session.get("reset_token")
-
-    if not email or not token:
+    if not token:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    success = update_password(email, new_password)
+    success = update_password(db, token, new_password)
     if success:
         request.session.clear()
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
