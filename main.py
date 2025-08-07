@@ -31,9 +31,14 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # ✅ Ejecutar init_db solo una vez en el startup del servidor
+# ✅ Ejecutar init_db una sola vez en el startup del servidor (seguro en producción)
 @app.on_event("startup")
 def on_startup():
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        print("❌ Error al inicializar la base de datos:", e)
+
 
 # Static and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
