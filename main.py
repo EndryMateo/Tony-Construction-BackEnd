@@ -27,11 +27,13 @@ from init_db import init_db
 # Initialize app
 app = FastAPI()
 
-# Asegúrate de crear las tablas
+# Asegúrate de crear las tablas en la base
 Base.metadata.create_all(bind=engine)
 
-# ⚠️ Ejecutar init_db una sola vez para crear admin y asegurar migraciones
-init_db()
+# ✅ Ejecutar init_db solo una vez en el startup del servidor
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # Static and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")

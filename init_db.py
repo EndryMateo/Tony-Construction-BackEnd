@@ -7,15 +7,16 @@ import sys
 
 def init_db():
     print("🔗 Conectando a la base de datos...")
+
     try:
         inspector = inspect(engine)
         print("📋 Tablas antes de crear:")
         print(inspector.get_table_names())
 
-        # Crear todas las tablas necesarias si no existen
+        # Crear todas las tablas necesarias
         Base.metadata.create_all(bind=engine)
 
-        inspector = inspect(engine)
+        inspector = inspect(engine)  # Refrescar lista de tablas
         print("✅ Tablas después de crear:")
         print(inspector.get_table_names())
 
@@ -31,6 +32,7 @@ def init_db():
                         password=hash_password("admin123"),
                     )
                     db.add(admin)
+                    db.flush()
                     db.commit()
                     print("🛠️ Admin inicial creado correctamente.")
                 else:
@@ -41,6 +43,8 @@ def init_db():
                 db.close()
         else:
             print("❌ La tabla 'admins' no fue creada correctamente.")
+
+        print("✅ init_db ejecutado exitosamente.")
 
     except Exception as e:
         print("❌ Error al conectar o inicializar la base de datos:", e)
