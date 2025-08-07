@@ -19,25 +19,28 @@ def init_db():
         print("✅ Tablas después de crear:")
         print(inspector.get_table_names())
 
-        # Crear admin por defecto si no existe
-        db = SessionLocal()
-        try:
-            admin_exists = db.query(Admin).filter(Admin.username == "Tony").first()
-            if not admin_exists:
-                admin = Admin(
-                    username="Tony",
-                    email="info@tonydesignconstruction.com",
-                    password=hash_password("admin123"),
-                )
-                db.add(admin)
-                db.commit()
-                print("🛠️ Admin inicial creado correctamente.")
-            else:
-                print("✔️ Admin 'Tony' ya existe. No se creó uno nuevo.")
-        except IntegrityError as e:
-            print("❌ Error de integridad al insertar admin:", e)
-        finally:
-            db.close()
+        # Crear admin por defecto solo si la tabla 'admins' existe
+        if "admins" in inspector.get_table_names():
+            db = SessionLocal()
+            try:
+                admin_exists = db.query(Admin).filter(Admin.username == "Tony").first()
+                if not admin_exists:
+                    admin = Admin(
+                        username="Tony",
+                        email="info@tonydesignconstruction.com",
+                        password=hash_password("admin123"),
+                    )
+                    db.add(admin)
+                    db.commit()
+                    print("🛠️ Admin inicial creado correctamente.")
+                else:
+                    print("✔️ Admin 'Tony' ya existe. No se creó uno nuevo.")
+            except IntegrityError as e:
+                print("❌ Error de integridad al insertar admin:", e)
+            finally:
+                db.close()
+        else:
+            print("❌ La tabla 'admins' no fue creada correctamente.")
 
     except Exception as e:
         print("❌ Error al conectar o inicializar la base de datos:", e)
