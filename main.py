@@ -14,15 +14,15 @@ import shutil
 from datetime import datetime, timedelta
 from jose import jwt
 
-print("Cambio de prueba para confirmar push")
+print("Iniciando FastAPI...")
 
 app = FastAPI()
 
 init_db()
 
-print("\ud83d\ude80 Iniciando FastAPI...")
+print("Conectando módulos y configuraciones...")
 
-# === Configuraci\u00f3n de CORS ===
+# === Configuración de CORS ===
 origins = [
     "http://localhost",
     "http://localhost:5500",
@@ -43,36 +43,36 @@ app.add_middleware(
 ADMIN_USER = "Tony"
 ADMIN_PASS = "admin123"
 
-# === JWT Token ===
+# === JWT Token para recuperación ===
 SECRET = "jwt_secret_for_recovery"
 ALGO = "HS256"
 
-# === Cookie y sesi\u00f3n ===
+# === Cookie y sesión ===
 def is_logged_in(session: str = Cookie(default=None)):
     if session != "active":
         raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/admin/login"})
 
-# === Archivos est\u00e1ticos y plantillas ===
+# === Archivos estáticos y plantillas ===
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# === Carpeta para im\u00e1genes de proyectos ===
+# === Carpeta para imágenes de proyectos ===
 PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
 os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
 
-# Verificaci\u00f3n de base de datos
+# Verificación de base de datos
 @app.on_event("startup")
 def test_db_connection():
     try:
-        print("\ud83d\udd04 Intentando conectar a la base de datos...")
+        print("Intentando conectar a la base de datos...")
         db = SessionLocal()
         db.execute(text("SELECT 1"))
-        print("\u2705 Conexi\u00f3n a la base de datos exitosa.")
+        print("Conexión a la base de datos exitosa.")
         db.close()
     except Exception as e:
-        print("\u274c Error al conectar a la base de datos:", e)
+        print("Error al conectar a la base de datos:", e)
 
-# === Rutas de autenticaci\u00f3n ===
+# === Rutas de autenticación ===
 @app.get("/admin/login", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -101,9 +101,9 @@ def change_password(request: Request, current_password: str = Form(...),
                     _: str = Depends(is_logged_in)):
     global ADMIN_PASS
     if current_password != ADMIN_PASS:
-        return templates.TemplateResponse("change_password.html", {"request": request, "error": "La contrase\u00f1a actual es incorrecta"})
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "La contraseña actual es incorrecta"})
     if new_password != confirm_password:
-        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las nuevas contrase\u00f1as no coinciden"})
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las nuevas contraseñas no coinciden"})
     ADMIN_PASS = new_password
     response = RedirectResponse(url="/admin/login", status_code=303)
     response.delete_cookie("session")
@@ -112,16 +112,16 @@ def change_password(request: Request, current_password: str = Form(...),
 @app.get("/admin/recover-password", response_class=HTMLResponse)
 def recover_password_page(request: Request):
     token = jwt.encode({"exp": datetime.utcnow() + timedelta(minutes=10)}, SECRET, algorithm=ALGO)
-    return HTMLResponse(f'<p>Usa este enlace para resetear tu contrase\u00f1a (v\u00e1lido 10min):<br><a href="/admin/reset-password/{token}">Reset Password</a></p>')
+    return HTMLResponse(f'<p>Usa este enlace para resetear tu contraseña (válido 10min):<br><a href="/admin/reset-password/{token}">Reset Password</a></p>')
 
 @app.get("/admin/reset-password/{token}", response_class=HTMLResponse)
 def reset_password_form(token: str, request: Request):
     try:
         jwt.decode(token, SECRET, algorithms=[ALGO])
     except jwt.ExpiredSignatureError:
-        return HTMLResponse("El token expir\u00f3")
+        return HTMLResponse("El token expiró")
     except:
-        return HTMLResponse("Token inv\u00e1lido")
+        return HTMLResponse("Token inválido")
     return templates.TemplateResponse("change_password.html", {"request": request})
 
 @app.post("/admin/reset-password/{token}")
@@ -129,14 +129,14 @@ def reset_password(token: str, request: Request, new_password: str = Form(...), 
     try:
         jwt.decode(token, SECRET, algorithms=[ALGO])
     except jwt.JWTError:
-        return HTMLResponse("Token inv\u00e1lido o expirado")
+        return HTMLResponse("Token inválido o expirado")
     if new_password != confirm_password:
-        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las contrase\u00f1as no coinciden"})
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las contraseñas no coinciden"})
     global ADMIN_PASS
     ADMIN_PASS = new_password
-    return HTMLResponse("Contrase\u00f1a actualizada. Por favor <a href='/admin/login'>log in</a> nuevamente.")
+    return HTMLResponse("Contraseña actualizada. Por favor <a href='/admin/login'>inicia sesión</a> nuevamente.")
 
-# === Rutas protegidas de administraci\u00f3n ===
+# === Rutas protegidas de administración ===
 @app.get("/admin", response_class=HTMLResponse)
 def get_admin_page(request: Request, _: str = Depends(is_logged_in)):
     return templates.TemplateResponse("admin.html", {"request": request})
@@ -201,7 +201,7 @@ def delete_project(project_id: int, _: str = Depends(is_logged_in)):
     db.close()
     return JSONResponse(status_code=404, content={"error": "Proyecto no encontrado"})
 
-# === Ruta API para el frontend ===
+# === Ruta API para frontend público ===
 @app.get("/projects")
 def get_projects():
     db: Session = SessionLocal()
