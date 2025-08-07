@@ -21,35 +21,17 @@ from jose.exceptions import JWTError
 from auth import hash_password
 from sqlalchemy.exc import IntegrityError
 
+# Importa init_db
+from init_db import init_db
 
 # Initialize app
 app = FastAPI()
 
-# Ensure tables exist at startup
+# Asegúrate de crear las tablas
 Base.metadata.create_all(bind=engine)
 
-# Create default admin if not exists
-def create_default_admin():
-    db = SessionLocal()
-    try:
-        admin_exists = db.query(Admin).filter(Admin.username == "Tony").first()
-        if not admin_exists:
-            admin = Admin(
-                username="Tony",
-                email="info@tonydesignconstruction.com",
-                password=hash_password("admin123"),
-            )
-            db.add(admin)
-            db.commit()
-            print("🛠️ Admin 'Tony' creado correctamente.")
-        else:
-            print("✔️ Admin 'Tony' ya existe.")
-    except IntegrityError as e:
-        print("❌ Error al crear el admin:", e)
-    finally:
-        db.close()
-
-create_default_admin()
+# ⚠️ Ejecutar init_db una sola vez para crear admin y asegurar migraciones
+init_db()
 
 # Static and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
