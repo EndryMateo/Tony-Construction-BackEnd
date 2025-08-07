@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi import FastAPI, Request, UploadFile, File, Form, Cookie, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -21,12 +21,13 @@ init_db()
 
 print("🚀 Iniciando FastAPI...")
 
-# Habilitar CORS
+# === Configuración de CORS ===
 origins = [
     "http://localhost",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "https://tu-sitio-en-cloudflare.pages.dev",  # Reemplaza con tu dominio real
+    "https://tonydesignconstruction.com",
+    "https://admin.tonydesignconstruction.com",
 ]
 
 app.add_middleware(
@@ -37,15 +38,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montar archivos estáticos y plantillas
+# === Usuario fijo para login ===
+ADMIN_USER = "Tony"
+ADMIN_PASS = "admin123"
+
+# === Cookie y sesión ===
+def is_logged_in(session: str = Cookie(default=None)):
+    if session != "active":
+        raise RedirectResponse(url="/admin/login", status_code=302)
+
+# === Archivos estáticos y plantillas ===
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Carpeta para imágenes de proyectos
+# === Carpeta para imágenes de proyectos ===
 PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
 os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
 
-# ✅ Probar conexión a la base de datos al iniciar
+# ✅ Verificación de base de datos al iniciar
 @app.on_event("startup")
 def test_db_connection():
     try:
@@ -57,13 +67,40 @@ def test_db_connection():
     except Exception as e:
         print("❌ Error al conectar a la base de datos:", e)
 
-# ✅ Crear un proyecto con redirect
+# === RUTAS DE AUTENTICACIÓN ===
+
+@app.get("/admin/login", response_class=HTMLResponse)
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/admin/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == ADMIN_USER and password == ADMIN_PASS:
+        response = RedirectResponse(url="/admin", status_code=302)
+        response.set_cookie(key="session", value="active", httponly=True, max_age=3600)
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+# === ADMIN RUTAS PROTEGIDAS ===
+
+@app.get("/admin", response_class=HTMLResponse)
+def get_admin_page(request: Request, _: str = Depends(is_logged_in)):
+    return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/admin/projects", response_class=HTMLResponse)
+def admin_projects(request: Request, _: str = Depends(is_logged_in)):
+    db: Session = SessionLocal()
+    projects = db.query(Project).all()
+    db.close()
+    return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
+
 @app.post("/admin/create-project")
 async def create_project(
     title: str = Form(...),
     description: str = Form(...),
     video_url: str = Form(None),
     images: List[UploadFile] = File(...),
+    _: str = Depends(is_logged_in)
 ):
     db: Session = SessionLocal()
     image_paths = []
@@ -90,20 +127,10 @@ async def create_project(
     db.refresh(new_project)
     db.close()
 
-    # 🔁 Redirigir al panel con mensaje
     return RedirectResponse(url="/admin?success=1", status_code=303)
 
-# Ver todos los proyectos (admin panel)
-@app.get("/admin/projects", response_class=HTMLResponse)
-def admin_projects(request: Request):
-    db: Session = SessionLocal()
-    projects = db.query(Project).all()
-    db.close()
-    return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
-
-# Eliminar un proyecto
 @app.post("/admin/delete-project/{project_id}")
-def delete_project(project_id: int):
+def delete_project(project_id: int, _: str = Depends(is_logged_in)):
     db: Session = SessionLocal()
     project = db.query(Project).filter(Project.id == project_id).first()
     if project:
@@ -120,7 +147,8 @@ def delete_project(project_id: int):
     db.close()
     return JSONResponse(status_code=404, content={"error": "Proyecto no encontrado"})
 
-# Ruta API para el frontend
+# === RUTA API para el frontend público ===
+
 @app.get("/projects")
 def get_projects():
     db: Session = SessionLocal()
@@ -137,10 +165,7 @@ def get_projects():
         for p in projects
     ]
 
-# Ruta al panel de admin principal
-@app.get("/admin", response_class=HTMLResponse)
-def get_admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+# === REDIRECCIÓN INICIAL ===
 
 @app.get("/")
 def root():

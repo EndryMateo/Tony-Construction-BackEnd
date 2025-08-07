@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <title>Todos los Proyectos | Admin Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Arimo&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Arimo&display=swap" rel="stylesheet" />
     <style>
       :root {
         --primary-red: #ff3300;
@@ -28,12 +25,30 @@
         background-color: var(--primary-red);
         padding: 1rem 2rem;
         color: white;
-        text-align: center;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
       }
 
       h1 {
         margin: 0;
         font-size: 2rem;
+      }
+
+      .logout-btn {
+        background-color: white;
+        color: var(--primary-red);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .logout-btn:hover {
+        background-color: var(--red-hover);
+        color: white;
       }
 
       .container {
@@ -104,6 +119,7 @@
         text-decoration: underline;
       }
     </style>
+
     <script>
       async function deleteProject(id) {
         if (confirm("¿Estás seguro de que deseas eliminar este proyecto?")) {
@@ -121,9 +137,11 @@
       }
     </script>
   </head>
+
   <body>
     <header>
       <h1>Todos los Proyectos</h1>
+      <a href="/admin/logout" class="logout-btn">Logout</a>
     </header>
 
     <div class="container">
@@ -138,8 +156,7 @@
           </a>
         </p>
         <p>
-          <strong>Creado el:</strong> {{ project.created_at.strftime('%Y-%m-%d
-          %H:%M') }}
+          <strong>Creado el:</strong> {{ project.created_at.strftime('%Y-%m-%d %H:%M') }}
         </p>
 
         <div class="images">

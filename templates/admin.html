@@ -4,14 +4,10 @@
     <meta charset="UTF-8" />
     <title>Admin Panel | Tony Design Construction LLC</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- ✅ Favicon -->
     <link rel="icon" href="/static/uploads/tony_favicon_circular.ico" type="image/x-icon" />
-
-    <!-- ✅ Meta Description -->
     <meta name="description" content="Admin panel for Tony Design Construction LLC – manage your kitchen, bath, and remodeling projects with ease." />
 
-    <!-- ✅ Structured Data (Organization & Logo) -->
+    <!-- ✅ Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -65,10 +61,30 @@
         height: 40px;
       }
 
+      .admin-header-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
       .admin-title strong {
         font-size: 1.2rem;
         font-weight: 700;
         color: var(--primary-red);
+      }
+
+      .logout-btn {
+        background-color: var(--primary-red);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+      }
+
+      .logout-btn:hover {
+        background-color: var(--red-hover);
       }
 
       .admin-section {
@@ -164,6 +180,12 @@
         .admin-title {
           align-self: flex-end;
         }
+
+        .admin-header-content {
+          flex-direction: column;
+          align-items: flex-end;
+          width: 100%;
+        }
       }
 
       .footer {
@@ -181,8 +203,11 @@
       <div class="logo-box">
         <a href="#"><img src="/static/uploads/logo.png" alt="Tony Logo" /></a>
       </div>
-      <div class="admin-title">
-        <strong>Admin Panel</strong>
+      <div class="admin-header-content">
+        <div class="admin-title">
+          <strong>Admin Panel</strong>
+        </div>
+        <a href="/admin/logout" class="logout-btn">Logout</a>
       </div>
     </header>
 
