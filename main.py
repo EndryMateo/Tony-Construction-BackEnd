@@ -10,7 +10,6 @@ from utils import (
     authenticate_user,
     create_access_token,
     send_recovery_email,
-    generate_token as verify_code_and_generate_token,
     update_admin_password as update_password,
     create_project,
     delete_project_by_id,
