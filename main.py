@@ -1,19 +1,18 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 from models import Project
 from database import SessionLocal, engine
-from sqlalchemy.orm import Session
 from typing import List
 import os
 import shutil
 from datetime import datetime
 
 print("🔁 Cambio de prueba para confirmar push")
-
 
 app = FastAPI()
 
@@ -35,12 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Montar archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Nueva carpeta exclusiva para imágenes de proyectos
+# Carpeta para imágenes de proyectos
 PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
 os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
 
@@ -50,7 +48,7 @@ def test_db_connection():
     try:
         print("🔄 Intentando conectar a la base de datos...")
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))  # ← Corregido con text()
         print("✅ Conexión a la base de datos exitosa.")
         db.close()
     except Exception as e:
@@ -65,9 +63,9 @@ async def create_project(
     images: List[UploadFile] = File(...),
 ):
     db: Session = SessionLocal()
-
     image_paths = []
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    
     for i, image in enumerate(images):
         clean_filename = image.filename.replace(" ", "_").replace("%", "_")
         filename = f"{timestamp}_{i}_{clean_filename}"
@@ -140,9 +138,6 @@ def get_projects():
 def get_admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
 
-
 @app.get("/")
 def root():
     return RedirectResponse(url="/admin")
-
-
