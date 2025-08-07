@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from models import Project
 from database import SessionLocal, engine
@@ -33,6 +34,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/admin")
 
 # Montar archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -137,3 +142,7 @@ def get_projects():
 @app.get("/admin", response_class=HTMLResponse)
 def get_admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/")
+def root():
+    return {"message": "Backend de Tony Design Construction activo."}
