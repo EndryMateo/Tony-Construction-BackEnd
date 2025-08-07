@@ -1,15 +1,13 @@
+# database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+# ⚠️ Reemplaza con tus datos reales de Postgres
 import os
 
 POSTGRES_URL = os.getenv("DATABASE_URL")
-
 if not POSTGRES_URL:
     raise RuntimeError("DATABASE_URL no está configurado")
-
-# ✅ Fix para SQLAlchemy si la URL viene con postgres:// en vez de postgresql://
-if POSTGRES_URL.startswith("postgres://"):
-    POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(bind=engine)
