@@ -8,6 +8,7 @@
   <style>
     :root {
       --primary-red: #ff3300;
+      --red-hover: #e62e00;
       --white: #fff;
     }
 
@@ -25,25 +26,36 @@
     .login-box {
       background-color: rgba(0, 0, 0, 0.6);
       padding: 2rem;
-      border-radius: 10px;
+      border-radius: 12px;
       max-width: 400px;
       width: 90%;
       color: var(--white);
       text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .logo {
+      margin-bottom: 1.5rem;
+    }
+
+    .logo img {
+      height: 60px;
     }
 
     h2 {
       margin-bottom: 1rem;
       color: var(--primary-red);
+      font-size: 1.8rem;
     }
 
     input {
       width: 100%;
       padding: 0.9rem;
-      margin: 0.5rem 0;
+      margin: 0.6rem 0;
       border: none;
       border-radius: 6px;
       font-size: 1rem;
+      font-family: inherit;
     }
 
     button {
@@ -57,10 +69,11 @@
       font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      margin-top: 0.5rem;
     }
 
     button:hover {
-      background-color: #e62e00;
+      background-color: var(--red-hover);
     }
 
     .error {
@@ -74,10 +87,17 @@
 </head>
 <body>
   <div class="login-box">
+    <!-- ✅ Logo de la empresa -->
+    <div class="logo">
+      <img src="/static/uploads/logo.png" alt="Tony Design Construction Logo">
+    </div>
+
     <h2>Admin Login</h2>
+
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
+
     <form method="post" action="/admin/login">
       <input type="text" name="username" placeholder="Username" required />
       <input type="password" name="password" placeholder="Password" required />
