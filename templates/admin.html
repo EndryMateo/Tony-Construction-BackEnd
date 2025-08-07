@@ -61,17 +61,11 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
-      .logo-box {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
-
       .logo-box img {
         height: 40px;
       }
 
-      .logo-box strong {
+      .admin-title strong {
         font-size: 1.2rem;
         font-weight: 700;
         color: var(--primary-red);
@@ -160,6 +154,16 @@
         .admin-form button {
           font-size: 0.95rem;
         }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+
+        .admin-title {
+          align-self: flex-end;
+        }
       }
 
       .footer {
@@ -176,6 +180,8 @@
     <header>
       <div class="logo-box">
         <a href="#"><img src="/static/uploads/logo.png" alt="Tony Logo" /></a>
+      </div>
+      <div class="admin-title">
         <strong>Admin Panel</strong>
       </div>
     </header>
