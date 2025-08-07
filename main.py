@@ -1,13 +1,12 @@
-from fastapi import FastAPI, Request, UploadFile, File, Form, Cookie, Depends
+from fastapi import FastAPI, Request, UploadFile, File, Form, Cookie, Depends, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from database import init_db
+from database import init_db, SessionLocal, engine
 from models import Project
-from database import SessionLocal, engine
 from typing import List
 import os
 import shutil
@@ -42,10 +41,13 @@ app.add_middleware(
 ADMIN_USER = "Tony"
 ADMIN_PASS = "admin123"
 
-# === Cookie y sesión ===
+# === Protección de sesión ===
 def is_logged_in(session: str = Cookie(default=None)):
     if session != "active":
-        raise RedirectResponse(url="/admin/login", status_code=302)
+        raise HTTPException(
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+            headers={"Location": "/admin/login"}
+        )
 
 # === Archivos estáticos y plantillas ===
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -80,6 +82,12 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
         response.set_cookie(key="session", value="active", httponly=True, max_age=3600)
         return response
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+@app.get("/admin/logout")
+def logout(request: Request):
+    response = RedirectResponse(url="/admin/login")
+    response.delete_cookie("session")
+    return response
 
 # === ADMIN RUTAS PROTEGIDAS ===
 
