@@ -35,9 +35,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def root():
-    return RedirectResponse(url="/admin")
 
 # Montar archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -143,6 +140,9 @@ def get_projects():
 def get_admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
 
+
 @app.get("/")
 def root():
-    return {"message": "Backend de Tony Design Construction activo."}
+    return RedirectResponse(url="/admin")
+
+
