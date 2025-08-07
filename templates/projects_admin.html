@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Todos los Proyectos | Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Arimo&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-red: #ff3300;
+        --red-hover: #e62e00;
+        --light-gray: #f8f8f8;
+        --dark-gray: #444;
+      }
+
+      body {
+        font-family: "Arimo", sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+        color: var(--dark-gray);
+      }
+
+      header {
+        background-color: var(--primary-red);
+        padding: 1rem 2rem;
+        color: white;
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .project {
+        border-bottom: 1px solid #ddd;
+        padding: 1.5rem 0;
+      }
+
+      .project:last-child {
+        border-bottom: none;
+      }
+
+      .project h2 {
+        margin: 0 0 0.5rem;
+        color: var(--primary-red);
+      }
+
+      .project p {
+        margin: 0.3rem 0;
+      }
+
+      .images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 1rem;
+      }
+
+      .images img {
+        max-width: 150px;
+        height: auto;
+        border-radius: 6px;
+      }
+
+      .delete-btn {
+        margin-top: 1rem;
+        background-color: var(--primary-red);
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+      }
+
+      .delete-btn:hover {
+        background-color: var(--red-hover);
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 2rem;
+        color: var(--primary-red);
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+    <script>
+      async function deleteProject(id) {
+        if (confirm("¿Estás seguro de que deseas eliminar este proyecto?")) {
+          const res = await fetch(`/admin/delete-project/${id}`, {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert(data.error || "Error al eliminar.");
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <h1>Todos los Proyectos</h1>
+    </header>
+
+    <div class="container">
+      {% for project in projects %}
+      <div class="project">
+        <h2>{{ project.title }}</h2>
+        <p><strong>Descripción:</strong> {{ project.description }}</p>
+        <p>
+          <strong>Video:</strong>
+          <a href="{{ project.video_url }}" target="_blank">
+            {{ project.video_url }}
+          </a>
+        </p>
+        <p>
+          <strong>Creado el:</strong> {{ project.created_at.strftime('%Y-%m-%d
+          %H:%M') }}
+        </p>
+
+        <div class="images">
+          {% for img in project.image_paths.split(',') %}
+          <img src="{{ img }}" alt="Project Image" />
+          {% endfor %}
+        </div>
+
+        <button class="delete-btn" onclick='deleteProject({{ project.id }})'>
+          Eliminar Proyecto
+        </button>
+      </div>
+      {% endfor %}
+
+      <a href="/admin" class="back-link">⬅ Volver al panel de administración</a>
+    </div>
+  </body>
+</html>

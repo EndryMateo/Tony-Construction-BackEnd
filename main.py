@@ -1,0 +1,123 @@
+from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from models import Project
+from database import SessionLocal, engine
+from sqlalchemy.orm import Session
+from typing import List
+import os
+import shutil
+from datetime import datetime
+
+app = FastAPI()
+
+# Habilitar CORS
+origins = [
+    "http://localhost",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "https://tu-sitio-en-cloudflare.pages.dev",  # Reemplaza con tu dominio real
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Montar archivos estáticos y plantillas
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Nueva carpeta exclusiva para imágenes de proyectos
+PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
+os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
+
+# Crear un proyecto nuevo
+@app.post("/admin/create-project")
+async def create_project(
+    title: str = Form(...),
+    description: str = Form(...),
+    video_url: str = Form(...),
+    images: List[UploadFile] = File(...),
+):
+    db: Session = SessionLocal()
+
+    image_paths = []
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    for i, image in enumerate(images):
+        clean_filename = image.filename.replace(" ", "_").replace("%", "_")
+        filename = f"{timestamp}_{i}_{clean_filename}"
+        filepath = os.path.join(PROJECT_IMAGE_FOLDER, filename)
+
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        image_paths.append("/static/uploads/images_projects/" + filename)
+
+    new_project = Project(
+        title=title,
+        description=description,
+        video_url=video_url,
+        image_paths=",".join(image_paths),
+    )
+    db.add(new_project)
+    db.commit()
+    db.refresh(new_project)
+    db.close()
+
+    return {"message": "Proyecto creado con éxito"}
+
+# Ver todos los proyectos (admin panel)
+@app.get("/admin/projects", response_class=HTMLResponse)
+def admin_projects(request: Request):
+    db: Session = SessionLocal()
+    projects = db.query(Project).all()
+    db.close()
+    return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
+
+# Eliminar un proyecto
+@app.post("/admin/delete-project/{project_id}")
+def delete_project(project_id: int):
+    db: Session = SessionLocal()
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if project:
+        # Borrar imágenes físicas de la carpeta correspondiente
+        for img in project.image_paths.split(","):
+            try:
+                filepath = os.path.join(os.getcwd(), img.lstrip("/"))  # Eliminar barra inicial
+                os.remove(filepath)
+            except Exception as e:
+                print(f"Error al eliminar {filepath}: {e}")
+        db.delete(project)
+        db.commit()
+        db.close()
+        return {"message": "Proyecto eliminado"}
+    db.close()
+    return JSONResponse(status_code=404, content={"error": "Proyecto no encontrado"})
+
+# Ruta API para el frontend
+@app.get("/projects")
+def get_projects():
+    db: Session = SessionLocal()
+    projects = db.query(Project).order_by(Project.created_at.desc()).all()
+    db.close()
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "description": p.description,
+            "video_url": p.video_url,
+            "images": p.image_paths.split(",") if p.image_paths else [],
+        }
+        for p in projects
+    ]
+
+# Ruta al panel de admin principal
+@app.get("/admin", response_class=HTMLResponse)
+def get_admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})

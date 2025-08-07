@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin Panel | Tony Design Construction LLC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ✅ Favicon -->
+    <link rel="icon" href="/static/uploads/tony_favicon_circular.ico" type="image/x-icon" />
+
+    <!-- ✅ Meta Description -->
+    <meta name="description" content="Admin panel for Tony Design Construction LLC – manage your kitchen, bath, and remodeling projects with ease." />
+
+    <!-- ✅ Structured Data (Organization & Logo) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Tony Design Construction LLC",
+      "url": "https://tonydesignconstruction.com",
+      "logo": "https://tonydesignconstruction.com/images/logo.png"
+    }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Arimo&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --primary-red: #ff3300;
+        --red-hover: #e62e00;
+        --light-gray: #ededed;
+        --dark-text: #111;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Arimo", sans-serif;
+        background: url("/static/uploads/contact-bg.jpg") no-repeat center center / cover;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: scroll;
+        color: var(--white);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .logo-box {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .logo-box img {
+        height: 40px;
+      }
+
+      .logo-box strong {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary-red);
+      }
+
+      .admin-section {
+        background-color: rgba(0, 0, 0, 0.6);
+        padding: 4rem 2rem;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .admin-container {
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 2rem;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 600px;
+        text-align: center;
+      }
+
+      .admin-container h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: white;
+      }
+
+      .project-link {
+        color: var(--primary-red);
+        font-weight: bold;
+        margin-bottom: 1rem;
+        display: inline-block;
+        text-decoration: none;
+      }
+
+      .project-link:hover {
+        text-decoration: underline;
+      }
+
+      .admin-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .admin-form input,
+      .admin-form textarea {
+        padding: 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+      }
+
+      .admin-form textarea {
+        min-height: 120px;
+      }
+
+      .admin-form button {
+        background-color: var(--primary-red);
+        color: white;
+        font-weight: bold;
+        font-size: 1rem;
+        border: none;
+        border-radius: 6px;
+        padding: 0.9rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .admin-form button:hover {
+        background-color: var(--red-hover);
+      }
+
+      @media (max-width: 768px) {
+        .admin-container h2 {
+          font-size: 2rem;
+        }
+
+        .admin-form input,
+        .admin-form textarea,
+        .admin-form button {
+          font-size: 0.95rem;
+        }
+      }
+
+      .footer {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #eee;
+        margin-top: auto;
+        padding: 1rem;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo-box">
+        <a href="#"><img src="/static/uploads/logo.png" alt="Tony Logo" /></a>
+        <strong>Admin Panel</strong>
+      </div>
+    </header>
+
+    <section class="admin-section">
+      <div class="admin-container">
+        <h2>Create a New Project</h2>
+
+        <!-- Enlace para ver todos los proyectos -->
+        <a href="/admin/projects" class="project-link">🗂 Ver todos los proyectos</a>
+
+        <form
+          class="admin-form"
+          method="post"
+          action="/admin/create-project"
+          enctype="multipart/form-data"
+        >
+          <input type="text" name="title" placeholder="Project Title" required />
+          <textarea name="description" placeholder="Description" required></textarea>
+          <input type="url" name="video_url" placeholder="Video URL (YouTube, TikTok, etc.)" required />
+          <input type="file" name="images" accept="image/*" multiple required />
+          <button type="submit">Save Project</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="footer">&copy; 2025 Tony Design Construction LLC. All rights reserved.</div>
+  </body>
+</html>
