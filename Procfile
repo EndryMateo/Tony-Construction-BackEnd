@@ -1,1 +1,1 @@
-python init_db.py
+web: bash start.sh
