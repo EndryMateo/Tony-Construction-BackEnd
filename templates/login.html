@@ -12,6 +12,10 @@
       --white: #fff;
     }
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -48,28 +52,24 @@
       font-size: 1.8rem;
     }
 
-    input {
+    input,
+    button {
       width: 100%;
-      padding: 0.9rem;
-      margin: 0.6rem 0;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
       border: none;
       border-radius: 6px;
       font-size: 1rem;
       font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }
 
     button {
       background-color: var(--primary-red);
       color: white;
       font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      padding: 0.9rem;
-      width: 100%;
-      font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      margin-top: 0.5rem;
     }
 
     button:hover {
@@ -82,6 +82,26 @@
       padding: 0.7rem;
       margin-bottom: 1rem;
       border-radius: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 1.5rem;
+      }
+
+      input,
+      button {
+        font-size: 0.95rem;
+        padding: 0.75rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      .logo img {
+        height: 50px;
+      }
     }
   </style>
 </head>
