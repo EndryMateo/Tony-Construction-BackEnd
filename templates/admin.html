@@ -4,21 +4,31 @@
     <meta charset="UTF-8" />
     <title>Admin Panel | Tony Design Construction LLC</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/static/uploads/tony_favicon_circular.ico" type="image/x-icon" />
-    <meta name="description" content="Admin panel for Tony Design Construction LLC – manage your kitchen, bath, and remodeling projects with ease." />
+    <link
+      rel="icon"
+      href="/static/uploads/tony_favicon_circular.ico"
+      type="image/x-icon"
+    />
+    <meta
+      name="description"
+      content="Admin panel for Tony Design Construction LLC – manage your kitchen, bath, and remodeling projects with ease."
+    />
 
     <!-- ✅ Structured Data -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Tony Design Construction LLC",
-      "url": "https://tonydesignconstruction.com",
-      "logo": "https://tonydesignconstruction.com/images/logo.png"
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Tony Design Construction LLC",
+        "url": "https://tonydesignconstruction.com",
+        "logo": "https://tonydesignconstruction.com/images/logo.png"
+      }
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Arimo&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Arimo&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
       :root {
@@ -37,7 +47,8 @@
 
       body {
         font-family: "Arimo", sans-serif;
-        background: url("/static/uploads/contact-bg.jpg") no-repeat center center / cover;
+        background: url("/static/uploads/contact-bg.jpg") no-repeat center
+          center / cover;
         color: var(--white);
         min-height: 100vh;
         display: flex;
@@ -51,6 +62,7 @@
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
+        gap: 1rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
@@ -62,7 +74,6 @@
         display: flex;
         align-items: center;
         gap: 1rem;
-        flex-wrap: wrap;
       }
 
       .admin-title strong {
@@ -204,10 +215,56 @@
         display: none;
         margin-bottom: 1rem;
         padding: 1rem;
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
         border-radius: 6px;
       }
+
+      @media (max-width: 480px) {
+  header {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .logo-box {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .admin-header-content {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .admin-title strong {
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  .logout-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+  }
+
+  .admin-container h2 {
+    font-size: 2rem;
+  }
+
+  .admin-form input,
+  .admin-form textarea,
+  .admin-form button {
+    font-size: 0.95rem;
+  }
+
+  .project-link {
+    font-size: 0.95rem;
+  }
+}
+
     </style>
   </head>
   <body>
@@ -227,9 +284,7 @@
       <div class="admin-container">
         <h2>Create a New Project</h2>
 
-        <div id="success-message">
-          ✅ Project created successfully.
-        </div>
+        <div id="success-message">✅ Project created successfully.</div>
 
         <a href="/admin/projects" class="project-link">🗂 View all projects</a>
 
@@ -239,16 +294,31 @@
           action="/admin/create-project"
           enctype="multipart/form-data"
         >
-          <input type="text" name="title" placeholder="Project Title" required />
-          <textarea name="description" placeholder="Description" required></textarea>
-          <input type="url" name="video_url" placeholder="Video URL (YouTube, TikTok, etc.)" />
+          <input
+            type="text"
+            name="title"
+            placeholder="Project Title"
+            required
+          />
+          <textarea
+            name="description"
+            placeholder="Description"
+            required
+          ></textarea>
+          <input
+            type="url"
+            name="video_url"
+            placeholder="Video URL (YouTube, TikTok, etc.)"
+          />
           <input type="file" name="images" accept="image/*" multiple required />
           <button type="submit">Save Project</button>
         </form>
       </div>
     </section>
 
-    <div class="footer">&copy; 2025 Tony Design Construction LLC. All rights reserved.</div>
+    <div class="footer">
+      &copy; 2025 Tony Design Construction LLC. All rights reserved.
+    </div>
 
     <script>
       const urlParams = new URLSearchParams(window.location.search);

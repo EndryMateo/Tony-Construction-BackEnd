@@ -1,3 +1,4 @@
+<!-- login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,6 +85,20 @@
       border-radius: 6px;
     }
 
+    .forgot-password {
+      margin-top: 0.5rem;
+    }
+
+    .forgot-password a {
+      color: var(--white);
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 480px) {
       .login-box {
         padding: 1.5rem;
@@ -107,7 +122,6 @@
 </head>
 <body>
   <div class="login-box">
-    <!-- ✅ Logo de la empresa -->
     <div class="logo">
       <img src="/static/uploads/logo.png" alt="Tony Design Construction Logo">
     </div>
@@ -123,6 +137,10 @@
       <input type="password" name="password" placeholder="Password" required />
       <button type="submit">Login</button>
     </form>
+
+    <div class="forgot-password">
+      <a href="/admin/recover-password">Forgot password?</a>
+    </div>
   </div>
 </body>
 </html>
