@@ -62,7 +62,7 @@ def test_db_connection():
 async def create_project(
     title: str = Form(...),
     description: str = Form(...),
-    video_url: str = Form(...),
+    video_url: str = Form(None),
     images: List[UploadFile] = File(...),
 ):
     db: Session = SessionLocal()
