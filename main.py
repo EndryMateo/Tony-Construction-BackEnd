@@ -5,22 +5,24 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from database import init_db, SessionLocal, engine
+from database import init_db
 from models import Project
+from database import SessionLocal, engine
 from typing import List
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
+from jose import jwt
 
-print("🔁 Cambio de prueba para confirmar push")
+print("\ud83d\udd01 Cambio de prueba para confirmar push")
 
 app = FastAPI()
 
 init_db()
 
-print("🚀 Iniciando FastAPI...")
+print("\ud83d\ude80 Iniciando FastAPI...")
 
-# === Configuración de CORS ===
+# === Configuraci\u00f3n de CORS ===
 origins = [
     "http://localhost",
     "http://localhost:5500",
@@ -41,36 +43,36 @@ app.add_middleware(
 ADMIN_USER = "Tony"
 ADMIN_PASS = "admin123"
 
-# === Protección de sesión ===
+# === JWT Token ===
+SECRET = "jwt_secret_for_recovery"
+ALGO = "HS256"
+
+# === Cookie y sesi\u00f3n ===
 def is_logged_in(session: str = Cookie(default=None)):
     if session != "active":
-        raise HTTPException(
-            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-            headers={"Location": "/admin/login"}
-        )
+        raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/admin/login"})
 
-# === Archivos estáticos y plantillas ===
+# === Archivos est\u00e1ticos y plantillas ===
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# === Carpeta para imágenes de proyectos ===
+# === Carpeta para im\u00e1genes de proyectos ===
 PROJECT_IMAGE_FOLDER = "static/uploads/images_projects"
 os.makedirs(PROJECT_IMAGE_FOLDER, exist_ok=True)
 
-# ✅ Verificación de base de datos al iniciar
+# Verificaci\u00f3n de base de datos
 @app.on_event("startup")
 def test_db_connection():
     try:
-        print("🔄 Intentando conectar a la base de datos...")
+        print("\ud83d\udd04 Intentando conectar a la base de datos...")
         db = SessionLocal()
         db.execute(text("SELECT 1"))
-        print("✅ Conexión a la base de datos exitosa.")
+        print("\u2705 Conexi\u00f3n a la base de datos exitosa.")
         db.close()
     except Exception as e:
-        print("❌ Error al conectar a la base de datos:", e)
+        print("\u274c Error al conectar a la base de datos:", e)
 
-# === RUTAS DE AUTENTICACIÓN ===
-
+# === Rutas de autenticaci\u00f3n ===
 @app.get("/admin/login", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -84,13 +86,57 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
 
 @app.get("/admin/logout")
-def logout(request: Request):
+def logout():
     response = RedirectResponse(url="/admin/login")
     response.delete_cookie("session")
     return response
 
-# === ADMIN RUTAS PROTEGIDAS ===
+@app.get("/admin/change-password", response_class=HTMLResponse)
+def change_password_page(request: Request, _: str = Depends(is_logged_in)):
+    return templates.TemplateResponse("change_password.html", {"request": request})
 
+@app.post("/admin/change-password")
+def change_password(request: Request, current_password: str = Form(...),
+                    new_password: str = Form(...), confirm_password: str = Form(...),
+                    _: str = Depends(is_logged_in)):
+    global ADMIN_PASS
+    if current_password != ADMIN_PASS:
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "La contrase\u00f1a actual es incorrecta"})
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las nuevas contrase\u00f1as no coinciden"})
+    ADMIN_PASS = new_password
+    response = RedirectResponse(url="/admin/login", status_code=303)
+    response.delete_cookie("session")
+    return response
+
+@app.get("/admin/recover-password", response_class=HTMLResponse)
+def recover_password_page(request: Request):
+    token = jwt.encode({"exp": datetime.utcnow() + timedelta(minutes=10)}, SECRET, algorithm=ALGO)
+    return HTMLResponse(f'<p>Usa este enlace para resetear tu contrase\u00f1a (v\u00e1lido 10min):<br><a href="/admin/reset-password/{token}">Reset Password</a></p>')
+
+@app.get("/admin/reset-password/{token}", response_class=HTMLResponse)
+def reset_password_form(token: str, request: Request):
+    try:
+        jwt.decode(token, SECRET, algorithms=[ALGO])
+    except jwt.ExpiredSignatureError:
+        return HTMLResponse("El token expir\u00f3")
+    except:
+        return HTMLResponse("Token inv\u00e1lido")
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+@app.post("/admin/reset-password/{token}")
+def reset_password(token: str, request: Request, new_password: str = Form(...), confirm_password: str = Form(...)):
+    try:
+        jwt.decode(token, SECRET, algorithms=[ALGO])
+    except jwt.JWTError:
+        return HTMLResponse("Token inv\u00e1lido o expirado")
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {"request": request, "error": "Las contrase\u00f1as no coinciden"})
+    global ADMIN_PASS
+    ADMIN_PASS = new_password
+    return HTMLResponse("Contrase\u00f1a actualizada. Por favor <a href='/admin/login'>log in</a> nuevamente.")
+
+# === Rutas protegidas de administraci\u00f3n ===
 @app.get("/admin", response_class=HTMLResponse)
 def get_admin_page(request: Request, _: str = Depends(is_logged_in)):
     return templates.TemplateResponse("admin.html", {"request": request})
@@ -155,8 +201,7 @@ def delete_project(project_id: int, _: str = Depends(is_logged_in)):
     db.close()
     return JSONResponse(status_code=404, content={"error": "Proyecto no encontrado"})
 
-# === RUTA API para el frontend público ===
-
+# === Ruta API para el frontend ===
 @app.get("/projects")
 def get_projects():
     db: Session = SessionLocal()
@@ -172,8 +217,6 @@ def get_projects():
         }
         for p in projects
     ]
-
-# === REDIRECCIÓN INICIAL ===
 
 @app.get("/")
 def root():
