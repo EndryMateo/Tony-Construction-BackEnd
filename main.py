@@ -6,8 +6,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from typing import Optional
-
-from database import create_project, get_all_projects, delete_project_by_id
 from models import Project
 from auth import authenticate_user, create_access_token, send_recovery_email, verify_code_and_generate_token, update_password
 
