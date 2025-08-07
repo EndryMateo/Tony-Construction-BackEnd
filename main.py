@@ -16,7 +16,7 @@ print("🔁 Cambio de prueba para confirmar push")
 
 app = FastAPI()
 
-
+init_db()
 
 print("🚀 Iniciando FastAPI...")
 
