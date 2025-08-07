@@ -51,13 +51,13 @@ def test_db_connection():
     try:
         print("🔄 Intentando conectar a la base de datos...")
         db = SessionLocal()
-        db.execute(text("SELECT 1"))  # ← Corregido con text()
+        db.execute(text("SELECT 1"))
         print("✅ Conexión a la base de datos exitosa.")
         db.close()
     except Exception as e:
         print("❌ Error al conectar a la base de datos:", e)
 
-# Crear un proyecto nuevo
+# ✅ Crear un proyecto con redirect
 @app.post("/admin/create-project")
 async def create_project(
     title: str = Form(...),
@@ -68,7 +68,7 @@ async def create_project(
     db: Session = SessionLocal()
     image_paths = []
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    
+
     for i, image in enumerate(images):
         clean_filename = image.filename.replace(" ", "_").replace("%", "_")
         filename = f"{timestamp}_{i}_{clean_filename}"
@@ -90,7 +90,8 @@ async def create_project(
     db.refresh(new_project)
     db.close()
 
-    return {"message": "Proyecto creado con éxito"}
+    # 🔁 Redirigir al panel con mensaje
+    return RedirectResponse(url="/admin?success=1", status_code=303)
 
 # Ver todos los proyectos (admin panel)
 @app.get("/admin/projects", response_class=HTMLResponse)

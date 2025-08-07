@@ -190,6 +190,11 @@
       <div class="admin-container">
         <h2>Create a New Project</h2>
 
+        <!-- ✅ Mensaje visual de éxito -->
+        <div id="success-message" style="display: none; margin-bottom: 1rem; padding: 1rem; background-color: #4CAF50; color: white; border-radius: 6px;">
+          ✅ Proyecto creado con éxito.
+        </div>
+
         <!-- Enlace para ver todos los proyectos -->
         <a href="/admin/projects" class="project-link">🗂 Ver todos los proyectos</a>
 
@@ -209,5 +214,18 @@
     </section>
 
     <div class="footer">&copy; 2025 Tony Design Construction LLC. All rights reserved.</div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const success = urlParams.get("success");
+      if (success === "1") {
+        const messageDiv = document.getElementById("success-message");
+        messageDiv.style.display = "block";
+        setTimeout(() => {
+          messageDiv.style.display = "none";
+          window.history.replaceState({}, document.title, "/admin");
+        }, 4000);
+      }
+    </script>
   </body>
 </html>
