@@ -1,28 +1,23 @@
-import requests
+# resend_utils.py
+import resend
 
-# 🔑 API key definitiva proporcionada por el usuario
-RESEND_API_KEY = "re_hjkZkuTC_KgkNAHaXKaY58i2Nryv3AMGg"
+# ✅ Nueva API Key funcional
+resend.api_key = "re_GWf6ezd7_Jd7c13Ng7zs2sTANbY22kgE5"
 
-def send_recovery_email(email: str, code: str):
-    url = "https://api.resend.com/emails"
-    headers = {
-        "Authorization": f"Bearer {RESEND_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    data = {
-        "from": "Tony Design <noreply@tonydesignconstruction.com>",
-        "to": [email],
-        "subject": "Your password reset code",
-        "html": f"""
-            <div style='font-family:Arial,sans-serif;padding:1rem;background:#f9f9f9;border-radius:10px'>
-                <h2 style='color:#ff3300;'>Tony Design Construction</h2>
+def send_recovery_email(to_email, code):
+    try:
+        response = resend.Emails.send({
+            "from": "onboarding@resend.dev",  # ✅ No cambiar a menos que verifiques un nuevo remitente
+            "to": [to_email],
+            "subject": "Your Recovery Code",
+            "html": f"""
+                <h2>Password Recovery</h2>
                 <p>Here is your 6-digit recovery code:</p>
-                <h1 style='letter-spacing:3px;'>{code}</h1>
-                <p>This code will expire soon. Use it to reset your password.</p>
-            </div>
-        """
-    }
-
-    response = requests.post(url, headers=headers, json=data)
-    return response.status_code == 200
+                <h1>{code}</h1>
+                <p>If you did not request this, you can ignore this email.</p>
+            """
+        })
+        return True
+    except Exception as e:
+        print("❌ Resend error:", e)
+        return False
