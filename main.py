@@ -22,6 +22,11 @@ Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# --- 🔁 Mostrar recover_password.html
+@app.get("/admin/recover-password", response_class=HTMLResponse)
+def recover_password_page(request: Request):
+    return templates.TemplateResponse("recover_password.html", {"request": request})
+
 # --- 🧠 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
