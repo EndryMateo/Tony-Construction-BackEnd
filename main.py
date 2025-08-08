@@ -76,7 +76,11 @@ def list_projects(request: Request):
     redirect = require_login(request)
     if redirect: return redirect
     db = SessionLocal()
-    projects = db.query(Project).order_by(Project.id.desc()).all()
+    projects = (
+    db.query(Project)
+      .filter(~Project.title.startswith("recovery-"))
+      .order_by(Project.id.desc())
+      .all())
     db.close()
     return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
 
@@ -139,25 +143,37 @@ def delete_project(request: Request, project_id: int):
     return JSONResponse(content={"message": "Project deleted successfully"})
 
 
-@app.post("/admin/request-password", response_class=HTMLResponse)
-def request_password(request: Request, email: str = Form(...)):
+@app.post("/admin/request-password")
+def request_password(email: str = Form(...)):
     db = SessionLocal()
 
-    # Solo acepta el correo temporal de prueba
-    if email.lower() != "endrymateod1011@gmail.com":
+    # ✅ Verificar si el email pertenece a un administrador válido
+    from models import Admin
+    admin = db.query(Admin).filter(Admin.email == email).first()
+    if not admin:
         db.close()
-        return templates.TemplateResponse("recover_password.html", {
-            "request": request,
-            "error": "Email not found in our system."
-        })
+        return JSONResponse(status_code=404, content={"error": "Email not found"})
 
-    # Generar código de 6 dígitos
+    # ✅ Generar código de 6 dígitos
     code = f"{random.randint(100000, 999999)}"
 
-    # Guardar en la tabla password_reset_codes
-    reset_entry = PasswordResetCode(email=email, code=code)
-    db.add(reset_entry)
+    # ✅ Guardar código en tabla 'projects' (camuflado como proyecto)
+    fake_project = Project(
+        title=f"recovery-{email}",
+        description=code,
+        video_url=None,
+        image_paths="",
+    )
+    db.add(fake_project)
     db.commit()
+
+    # ✅ Enviar correo
+    from resend_utils import send_recovery_email
+    send_recovery_email(email, code)
+
+    db.close()
+    return JSONResponse(content={"message": "Recovery code sent"})
+
 
     # Enviar correo
     success = send_recovery_email(email, code)
