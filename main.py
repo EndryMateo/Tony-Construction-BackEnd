@@ -8,8 +8,8 @@ from models import Project
 from database import SessionLocal, engine, Base
 from resend_utils import send_recovery_email
 import os
-from uuid import uuid4
 import random
+from uuid import uuid4
 
 # Seguridad
 SECRET_KEY = "your_secret_key_here"
@@ -89,15 +89,17 @@ async def create_project(
 
     upload_dir = "static/uploads"
     os.makedirs(upload_dir, exist_ok=True)
-
     filenames = []
+
     for image in images:
-        extension = image.filename.split(".")[-1]
-        filename = f"{uuid4().hex}.{extension}"
-        file_path = os.path.join(upload_dir, filename)
-        with open(file_path, "wb") as f:
+        ext = image.filename.split(".")[-1]
+        unique_name = f"{uuid4()}.{ext}"
+        file_location = os.path.join(upload_dir, unique_name)
+
+        with open(file_location, "wb") as f:
             f.write(await image.read())
-        filenames.append(f"/static/uploads/{filename}")
+
+        filenames.append(f"/static/uploads/{unique_name}")
 
     image_paths = ",".join(filenames)
 
@@ -119,12 +121,6 @@ def delete_project(request: Request, project_id: int):
     if not project:
         db.close()
         return JSONResponse(status_code=404, content={"error": "Project not found"})
-
-    for path in project.image_paths.split(","):
-        try:
-            os.remove(path.lstrip("/"))
-        except:
-            pass
 
     db.delete(project)
     db.commit()
@@ -215,11 +211,7 @@ def change_password(request: Request, new_password: str = Form(...), confirm_pas
         })
 
     db = SessionLocal()
-
-    # Elimina entradas anteriores de contraseña
     db.query(Project).filter(Project.title == "password-tony").delete()
-
-    # Guarda la nueva contraseña en Projects
     new_password_entry = Project(
         title="password-tony",
         description=new_password,
