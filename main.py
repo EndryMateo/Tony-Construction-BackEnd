@@ -8,8 +8,9 @@ from models import Project
 from database import SessionLocal, engine, Base
 from resend_utils import send_recovery_email
 import os
-from uuid import uuid4
 import random
+import httpx  # NUEVO
+from uuid import uuid4
 
 # Seguridad
 SECRET_KEY = "your_secret_key_here"
@@ -20,6 +21,29 @@ Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# Cloudflare Images
+CLOUDFLARE_IMAGES_TOKEN = "vkF5Im2-0pLzQuB1BVNsWFuPHcxtW4ZgXqd26Oj4"
+CLOUDFLARE_ACCOUNT_ID = "6b9974e65901de406903a4f1806680cc"
+CLOUDFLARE_DELIVERY_URL = "https://imagedelivery.net/sFDQUwRUmDyLXLdsjUAhvA"
+
+async def upload_to_cloudflare_image(file: UploadFile) -> str:
+    async with httpx.AsyncClient() as client:
+        files = {'file': (file.filename, await file.read(), file.content_type)}
+        headers = {"Authorization": f"Bearer {CLOUDFLARE_IMAGES_TOKEN}"}
+        response = await client.post(
+            f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/images/v1",
+            headers=headers,
+            files=files
+        )
+
+    data = response.json()
+    if response.status_code == 200 and data.get("success"):
+        image_id = data["result"]["id"]
+        return f"{CLOUDFLARE_DELIVERY_URL}/{image_id}/public"
+    else:
+        print("Cloudflare Upload Error:", data)
+        return ""
 
 def require_login(request: Request):
     if "user" not in request.session:
@@ -87,17 +111,11 @@ async def create_project(
     redirect = require_login(request)
     if redirect: return redirect
 
-    upload_dir = "static/uploads"
-    os.makedirs(upload_dir, exist_ok=True)
-
     filenames = []
     for image in images:
-        extension = image.filename.split(".")[-1]
-        filename = f"{uuid4().hex}.{extension}"
-        file_path = os.path.join(upload_dir, filename)
-        with open(file_path, "wb") as f:
-            f.write(await image.read())
-        filenames.append(f"/static/uploads/{filename}")
+        url = await upload_to_cloudflare_image(image)
+        if url:
+            filenames.append(url)
 
     image_paths = ",".join(filenames)
 
@@ -119,12 +137,6 @@ def delete_project(request: Request, project_id: int):
     if not project:
         db.close()
         return JSONResponse(status_code=404, content={"error": "Project not found"})
-
-    for path in project.image_paths.split(","):
-        try:
-            os.remove(path.lstrip("/"))
-        except:
-            pass
 
     db.delete(project)
     db.commit()
@@ -215,11 +227,7 @@ def change_password(request: Request, new_password: str = Form(...), confirm_pas
         })
 
     db = SessionLocal()
-
-    # Elimina entradas anteriores de contraseña
     db.query(Project).filter(Project.title == "password-tony").delete()
-
-    # Guarda la nueva contraseña en Projects
     new_password_entry = Project(
         title="password-tony",
         description=new_password,
