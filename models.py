@@ -4,6 +4,17 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
+# ✅ Modelo de administrador
+class Admin(Base):
+    __tablename__ = "admins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = Column(Boolean, default=True)
+
 # ✅ Modelo de proyectos
 class Project(Base):
     __tablename__ = "projects"
@@ -28,13 +39,4 @@ class PasswordResetCode(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-# ✅ Modelo de administrador
-class Admin(Base):
-    __tablename__ = "admins"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    is_active = Column(Boolean, default=True)
