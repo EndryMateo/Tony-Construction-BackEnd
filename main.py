@@ -224,3 +224,26 @@ def change_password(request: Request, new_password: str = Form(...), confirm_pas
 
     request.session.clear()
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+
+# ✅ NUEVA RUTA PÚBLICA para obtener proyectos desde el frontend
+@app.get("/api/projects")
+def get_public_projects():
+    db = SessionLocal()
+    projects = (
+        db.query(Project)
+        .filter(~Project.title.startswith("recovery-"), ~Project.title.startswith("password-"))
+        .order_by(Project.id.desc())
+        .all()
+    )
+    db.close()
+
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "description": p.description,
+            "image_paths": p.image_paths,
+            "video_url": p.video_url
+        }
+        for p in projects
+    ]
