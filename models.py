@@ -16,7 +16,7 @@ class Project(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-
+# ✅ Modelo para códigos de recuperación
 class PasswordResetCode(Base):
     __tablename__ = "password_reset_codes"
 

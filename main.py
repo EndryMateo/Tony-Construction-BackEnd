@@ -5,13 +5,11 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from typing import Optional, List
 from models import Project
-from database import SessionLocal, engine, Base, init_db
+from database import SessionLocal, engine, Base
+from resend_utils import send_recovery_email
 import os
 from uuid import uuid4
-from models import PasswordResetCode
-from resend_utils import send_recovery_email
 import random
-
 
 # --- 🔒 Seguridad
 SECRET_KEY = "your_secret_key_here"  # Usa uno seguro en producción
@@ -25,12 +23,6 @@ Base.metadata.create_all(bind=engine)
 # --- 📁 Archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-
-# --- 🔁 Mostrar recover_password.html
-@app.get("/admin/recover-password", response_class=HTMLResponse)
-def recover_password_page(request: Request):
-    return templates.TemplateResponse("recover_password.html", {"request": request})
-
 
 # --- 🧠 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
@@ -70,17 +62,18 @@ def admin_panel(request: Request):
     if redirect: return redirect
     return templates.TemplateResponse("admin.html", {"request": request})
 
-# --- 📂 Ver proyectos
+# --- 📂 Ver proyectos (excluyendo recoveries)
 @app.get("/admin/projects", response_class=HTMLResponse)
 def list_projects(request: Request):
     redirect = require_login(request)
     if redirect: return redirect
     db = SessionLocal()
     projects = (
-    db.query(Project)
-      .filter(~Project.title.startswith("recovery-"))
-      .order_by(Project.id.desc())
-      .all())
+        db.query(Project)
+        .filter(~Project.title.startswith("recovery-"))
+        .order_by(Project.id.desc())
+        .all()
+    )
     db.close()
     return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
 
@@ -142,40 +135,35 @@ def delete_project(request: Request, project_id: int):
     db.close()
     return JSONResponse(content={"message": "Project deleted successfully"})
 
+# --- 🔁 Página de recuperación de contraseña
+@app.get("/admin/recover-password", response_class=HTMLResponse)
+def recover_password_page(request: Request):
+    return templates.TemplateResponse("recover_password.html", {"request": request})
 
+# --- 📩 Solicitud de código de recuperación
 @app.post("/admin/request-password")
-def request_password(email: str = Form(...)):
+def request_password(request: Request, email: str = Form(...)):
     db = SessionLocal()
 
-    # ✅ Verificar si el email pertenece a un administrador válido
-    from models import Admin
-    admin = db.query(Admin).filter(Admin.email == email).first()
-    if not admin:
+    VALID_ADMIN_EMAIL = "endrymateod1011@gmail.com"
+    if email != VALID_ADMIN_EMAIL:
         db.close()
-        return JSONResponse(status_code=404, content={"error": "Email not found"})
+        return templates.TemplateResponse("recover_password.html", {
+            "request": request,
+            "error": "Email not found"
+        })
 
-    # ✅ Generar código de 6 dígitos
     code = f"{random.randint(100000, 999999)}"
 
-    # ✅ Guardar código en tabla 'projects' (camuflado como proyecto)
-    fake_project = Project(
+    recovery_project = Project(
         title=f"recovery-{email}",
         description=code,
         video_url=None,
-        image_paths="",
+        image_paths=""
     )
-    db.add(fake_project)
+    db.add(recovery_project)
     db.commit()
 
-    # ✅ Enviar correo
-    from resend_utils import send_recovery_email
-    send_recovery_email(email, code)
-
-    db.close()
-    return JSONResponse(content={"message": "Recovery code sent"})
-
-
-    # Enviar correo
     success = send_recovery_email(email, code)
     db.close()
 
