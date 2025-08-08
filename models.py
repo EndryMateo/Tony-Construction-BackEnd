@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
 
@@ -22,12 +22,9 @@ class Project(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
-    image1 = Column(String(255))
-    image2 = Column(String(255))
-    image3 = Column(String(255))
-    video = Column(String(255))
+    image_paths = Column(String(1000))  # 👈 corresponde a lo que usas en el backend
+    video_url = Column(String(255))     # 👈 corresponde a lo que usas en el backend
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
 
 # ✅ Modelo para recuperación de contraseña
 class PasswordResetCode(Base):
@@ -37,6 +34,3 @@ class PasswordResetCode(Base):
     email = Column(String(100), nullable=False)
     code = Column(String(6), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-
-
