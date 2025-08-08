@@ -101,8 +101,8 @@
       <div class="error">{{ error }}</div>
     {% endif %}
 
-    <form method="post">
-      <input type="text" name="code" placeholder="Enter the 6-digit code" maxlength="6" required />
+    <form method="post" action="/admin/verify-code">
+      <input type="text" name="code" placeholder="Enter the 6-digit code" maxlength="6" pattern="\d{6}" required />
       <button type="submit">Confirm</button>
     </form>
   </div>
