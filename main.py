@@ -11,56 +11,57 @@ import os
 from uuid import uuid4
 import random
 
-# --- 🔒 Seguridad
-SECRET_KEY = "your_secret_key_here"  # Usa uno seguro en producción
-
-# --- 🚀 Inicializar la app
+# Seguridad
+SECRET_KEY = "your_secret_key_here"
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
-# --- 📁 Archivos estáticos y templates
+# Archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-
-# --- 🧠 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
-# --- 🔐 Verificación de sesión
 def require_login(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-# --- 🌐 Redirección raíz
 @app.get("/", response_class=HTMLResponse)
 def root():
     return RedirectResponse("/admin")
 
-# --- 🔑 Login
 @app.get("/admin/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/admin/login", response_class=HTMLResponse)
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == "tony" and password == "admin123":
+    db = SessionLocal()
+    saved = (
+        db.query(Project)
+        .filter(Project.title == "password-tony")
+        .order_by(Project.id.desc())
+        .first()
+    )
+    db.close()
+
+    real_password = saved.description if saved else "admin123"
+    if username == "tony" and password == real_password:
         request.session["user"] = username
         return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
 
-# --- 🔚 Logout
 @app.get("/admin/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-# --- 📋 Panel admin
 @app.get("/admin", response_class=HTMLResponse)
 def admin_panel(request: Request):
     redirect = require_login(request)
     if redirect: return redirect
     return templates.TemplateResponse("admin.html", {"request": request})
 
-# --- 📂 Ver proyectos (excluyendo recoveries)
 @app.get("/admin/projects", response_class=HTMLResponse)
 def list_projects(request: Request):
     redirect = require_login(request)
@@ -68,14 +69,13 @@ def list_projects(request: Request):
     db = SessionLocal()
     projects = (
         db.query(Project)
-        .filter(~Project.title.startswith("recovery-"))
+        .filter(~Project.title.startswith("recovery-"), ~Project.title.startswith("password-"))
         .order_by(Project.id.desc())
         .all()
     )
     db.close()
     return templates.TemplateResponse("projects_admin.html", {"request": request, "projects": projects})
 
-# --- ➕ Crear nuevo proyecto
 @app.post("/admin/create-project", response_class=HTMLResponse)
 async def create_project(
     request: Request,
@@ -109,7 +109,6 @@ async def create_project(
 
     return RedirectResponse(url="/admin?success=1", status_code=status.HTTP_302_FOUND)
 
-# --- ❌ Eliminar proyecto
 @app.post("/admin/delete-project/{project_id}")
 def delete_project(request: Request, project_id: int):
     redirect = require_login(request)
@@ -132,18 +131,14 @@ def delete_project(request: Request, project_id: int):
     db.close()
     return JSONResponse(content={"message": "Project deleted successfully"})
 
-# --- 🔁 Página de recuperación de contraseña
 @app.get("/admin/recover-password", response_class=HTMLResponse)
 def recover_password_page(request: Request):
     return templates.TemplateResponse("recover_password.html", {"request": request})
 
-# --- 📩 Enviar código al email
 @app.post("/admin/request-password")
 def request_password(request: Request, email: str = Form(...)):
     db = SessionLocal()
-
-    VALID_ADMIN_EMAIL = "endrymateod1011@gmail.com"
-    if email != VALID_ADMIN_EMAIL:
+    if email != "endrymateod1011@gmail.com":
         db.close()
         return templates.TemplateResponse("recover_password.html", {
             "request": request,
@@ -176,7 +171,6 @@ def request_password(request: Request, email: str = Form(...)):
             "error": "Failed to send email. Please try again later."
         })
 
-# --- 🧪 Página y lógica de verificación del código
 @app.get("/admin/verify-code", response_class=HTMLResponse)
 def verify_code_page(request: Request):
     return templates.TemplateResponse("verify_code.html", {"request": request})
@@ -203,7 +197,6 @@ def verify_code(request: Request, code: str = Form(...)):
     request.session["verified_code"] = code
     return RedirectResponse(url="/admin/change-password", status_code=status.HTTP_302_FOUND)
 
-# --- 🔒 Cambio de contraseña
 @app.get("/admin/change-password", response_class=HTMLResponse)
 def change_password_page(request: Request):
     if "verified_code" not in request.session:
@@ -221,10 +214,21 @@ def change_password(request: Request, new_password: str = Form(...), confirm_pas
             "error": "Passwords do not match"
         })
 
-    # En este ejemplo lo guardamos en un archivo
-    if request.session["verified_email"] == "endrymateod1011@gmail.com":
-        with open("secrets.txt", "w") as f:
-            f.write(new_password)
+    db = SessionLocal()
+
+    # Elimina entradas anteriores de contraseña
+    db.query(Project).filter(Project.title == "password-tony").delete()
+
+    # Guarda la nueva contraseña en Projects
+    new_password_entry = Project(
+        title="password-tony",
+        description=new_password,
+        video_url=None,
+        image_paths=""
+    )
+    db.add(new_password_entry)
+    db.commit()
+    db.close()
 
     request.session.clear()
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
