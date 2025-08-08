@@ -24,7 +24,7 @@ Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- 🧠 Middleware de sesión
+# --- 🔀 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # --- 🔐 Verificación de sesión
@@ -167,6 +167,7 @@ def request_password(request: Request, email: str = Form(...)):
     db.close()
 
     if success:
+        request.session["verified_email"] = email
         return templates.TemplateResponse("verify_code.html", {
             "request": request,
             "email": email
@@ -176,3 +177,55 @@ def request_password(request: Request, email: str = Form(...)):
             "request": request,
             "error": "Failed to send email. Please try again later."
         })
+
+# --- 🔐 Verificar código
+@app.get("/admin/verify-code", response_class=HTMLResponse)
+def verify_code_page(request: Request):
+    return templates.TemplateResponse("verify_code.html", {"request": request})
+
+@app.post("/admin/verify-code")
+def verify_code(request: Request, code: str = Form(...)):
+    db = SessionLocal()
+    email = request.session.get("verified_email")
+
+    recovery_project = (
+        db.query(Project)
+        .filter(Project.title == f"recovery-{email}", Project.description == code)
+        .order_by(Project.id.desc())
+        .first()
+    )
+    db.close()
+
+    if not recovery_project:
+        return templates.TemplateResponse("verify_code.html", {
+            "request": request,
+            "error": "Invalid code"
+        })
+
+    request.session["verified_code"] = code
+    return RedirectResponse(url="/admin/change-password", status_code=status.HTTP_302_FOUND)
+
+# --- 🔑 Página de cambio de contraseña
+@app.get("/admin/change-password", response_class=HTMLResponse)
+def change_password_page(request: Request):
+    if "verified_code" not in request.session:
+        return RedirectResponse(url="/admin/recover-password", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+@app.post("/admin/change-password")
+def change_password(request: Request, new_password: str = Form(...), confirm_password: str = Form(...)):
+    if "verified_code" not in request.session or "verified_email" not in request.session:
+        return RedirectResponse(url="/admin/recover-password", status_code=status.HTTP_302_FOUND)
+
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Passwords do not match"
+        })
+
+    if request.session["verified_email"] == "endrymateod1011@gmail.com":
+        with open("secrets.txt", "w") as f:
+            f.write(new_password)
+
+    request.session.clear()
+    return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
