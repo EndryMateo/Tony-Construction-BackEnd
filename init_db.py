@@ -1,7 +1,7 @@
-# ✅ init_db.py final
+# ✅ init_db.py final con soporte para PasswordResetCode
 
 from database import Base, engine, SessionLocal
-from models import Project, Admin, PasswordResetCode
+from models import Project, Admin, PasswordResetCode  # 👈 Incluye el modelo
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from auth import hash_password
@@ -26,10 +26,10 @@ def init_db():
     print("📋 Tablas antes de crear:")
     print(inspector.get_table_names())
 
-    # Crear tablas por SQLAlchemy (excepto admins, que forzaremos)
+    # ✅ Crear todas las tablas de SQLAlchemy (incluye PasswordResetCode)
     Base.metadata.create_all(bind=engine)
 
-    # Crear tabla admins manualmente si no está
+    # ✅ Crear admins manualmente si no existe (PostgreSQL a veces requiere esto)
     if "admins" not in inspector.get_table_names():
         print("⚠️ Tabla 'admins' no detectada. Intentando crearla manualmente...")
         create_admins_table_if_needed()
@@ -39,7 +39,7 @@ def init_db():
     print("✅ Tablas después de crear:")
     print(inspector.get_table_names())
 
-    # Crear admin solo si la tabla existe
+    # Crear admin por defecto solo si la tabla 'admins' existe
     if "admins" in inspector.get_table_names():
         db = SessionLocal()
         try:
