@@ -5,9 +5,13 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from typing import Optional, List
 from models import Project
-from database import SessionLocal, engine, Base
+from database import SessionLocal, engine, Base, init_db
 import os
 from uuid import uuid4
+from models import PasswordResetCode
+from resend_utils import send_recovery_email
+import random
+
 
 # --- 🔒 Seguridad
 SECRET_KEY = "your_secret_key_here"  # Usa uno seguro en producción
@@ -26,6 +30,7 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/admin/recover-password", response_class=HTMLResponse)
 def recover_password_page(request: Request):
     return templates.TemplateResponse("recover_password.html", {"request": request})
+
 
 # --- 🧠 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
@@ -132,3 +137,36 @@ def delete_project(request: Request, project_id: int):
     db.commit()
     db.close()
     return JSONResponse(content={"message": "Project deleted successfully"})
+
+
+@app.post("/admin/request-password", response_class=HTMLResponse)
+def request_password(request: Request, email: str = Form(...)):
+    db = SessionLocal()
+
+    # Solo acepta el correo temporal de prueba
+    if email.lower() != "endrymateod1011@gmail.com":
+        db.close()
+        return templates.TemplateResponse("recover_password.html", {
+            "request": request,
+            "error": "Email not found in our system."
+        })
+
+    # Generar código de 6 dígitos
+    code = f"{random.randint(100000, 999999)}"
+
+    # Guardar en la tabla password_reset_codes
+    reset_entry = PasswordResetCode(email=email, code=code)
+    db.add(reset_entry)
+    db.commit()
+
+    # Enviar correo
+    success = send_recovery_email(email, code)
+    db.close()
+
+    if success:
+        return HTMLResponse(f"<h2>Code sent to {email}</h2><p>Check your inbox.</p>")
+    else:
+        return templates.TemplateResponse("recover_password.html", {
+            "request": request,
+            "error": "Failed to send email. Please try again later."
+        })

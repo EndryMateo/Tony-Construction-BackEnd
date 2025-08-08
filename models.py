@@ -14,3 +14,13 @@ class Project(Base):
     image_paths = Column(String(1000))  # rutas separadas por coma
     video_url = Column(String(255))
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+
+class PasswordResetCode(Base):
+    __tablename__ = "password_reset_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False)
+    code = Column(String(6), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
