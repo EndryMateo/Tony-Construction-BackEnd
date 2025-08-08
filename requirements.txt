@@ -10,3 +10,4 @@ passlib[bcrypt]
 requests
 itsdangerous
 resend
+httpx
