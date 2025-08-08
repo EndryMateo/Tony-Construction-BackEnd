@@ -123,7 +123,6 @@ def delete_project(request: Request, project_id: int):
         db.close()
         return JSONResponse(status_code=404, content={"error": "Project not found"})
 
-    # Eliminar imágenes del sistema
     for path in project.image_paths.split(","):
         try:
             os.remove(path.lstrip("/"))
@@ -168,7 +167,10 @@ def request_password(request: Request, email: str = Form(...)):
     db.close()
 
     if success:
-        return HTMLResponse(f"<h2>Code sent to {email}</h2><p>Check your inbox.</p>")
+        return templates.TemplateResponse("verify_code.html", {
+            "request": request,
+            "email": email
+        })
     else:
         return templates.TemplateResponse("recover_password.html", {
             "request": request,
