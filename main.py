@@ -16,15 +16,13 @@ SECRET_KEY = "your_secret_key_here"  # Usa uno seguro en producción
 
 # --- 🚀 Inicializar la app
 app = FastAPI()
-
-# --- 🧱 Crear tablas
 Base.metadata.create_all(bind=engine)
 
 # --- 📁 Archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- 🔀 Middleware de sesión
+# --- 🧠 Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # --- 🔐 Verificación de sesión
@@ -139,7 +137,7 @@ def delete_project(request: Request, project_id: int):
 def recover_password_page(request: Request):
     return templates.TemplateResponse("recover_password.html", {"request": request})
 
-# --- 📩 Solicitud de código de recuperación
+# --- 📩 Enviar código al email
 @app.post("/admin/request-password")
 def request_password(request: Request, email: str = Form(...)):
     db = SessionLocal()
@@ -178,7 +176,7 @@ def request_password(request: Request, email: str = Form(...)):
             "error": "Failed to send email. Please try again later."
         })
 
-# --- 🔐 Verificar código
+# --- 🧪 Página y lógica de verificación del código
 @app.get("/admin/verify-code", response_class=HTMLResponse)
 def verify_code_page(request: Request):
     return templates.TemplateResponse("verify_code.html", {"request": request})
@@ -205,7 +203,7 @@ def verify_code(request: Request, code: str = Form(...)):
     request.session["verified_code"] = code
     return RedirectResponse(url="/admin/change-password", status_code=status.HTTP_302_FOUND)
 
-# --- 🔑 Página de cambio de contraseña
+# --- 🔒 Cambio de contraseña
 @app.get("/admin/change-password", response_class=HTMLResponse)
 def change_password_page(request: Request):
     if "verified_code" not in request.session:
@@ -223,6 +221,7 @@ def change_password(request: Request, new_password: str = Form(...), confirm_pas
             "error": "Passwords do not match"
         })
 
+    # En este ejemplo lo guardamos en un archivo
     if request.session["verified_email"] == "endrymateod1011@gmail.com":
         with open("secrets.txt", "w") as f:
             f.write(new_password)
